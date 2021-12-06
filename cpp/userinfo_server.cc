@@ -19,6 +19,10 @@
 #include <iostream>
 #include <memory>
 #include <string>
+#include <time.h>
+#include <sstream>
+#include <mutex>
+#include <unordered_map>
 
 #include <grpcpp/ext/proto_server_reflection_plugin.h>
 #include <grpcpp/grpcpp.h>
@@ -38,11 +42,47 @@ using userinfo::UserInfo;
 using userinfo::UserInfoReply;
 using userinfo::UserInfoRequest;
 
+// Internal data representation of UserInfo.
+class UserData {
+private:   
+    std::string m_firstName;
+    std::string m_lastName;
+    std::string m_dob;
+    std::string m_email;
+    std::string m_phoneNumber;
+
+public:
+    UserData(const UserInfoRequest* userInfoRequest) : 
+        m_firstName(userInfoRequest->firstname()),
+        m_lastName(userInfoRequest->lastname()),
+        m_dob(userInfoRequest->dob()),
+        m_email(userInfoRequest->email()),
+        m_phoneNumber(userInfoRequest->phonenumber()) {
+    }
+};
+
 // Logic and data behind the server's behavior.
 class UserInfoServiceImpl final : public UserInfo::Service {
+private:
+  std::mutex m_updateMutex;
+  std::unordered_map< uint64_t, std::shared_ptr<UserData> > m_userIdToInfoMap;
+
+public:
   Status UpdateUserInfo(ServerContext* context, const UserInfoRequest* request,
       UserInfoReply* reply) override {
-    std::cout << request->timestamp() << ": Received request #" << request->traceid() << " for user ID " << request->userid() << std::endl;
+    std::ostringstream oss;
+    const int bufferlen = 20;
+    char buffer[bufferlen];
+    struct tm timeinfo;
+    std::time_t secsSinceEpoch = request->timestamp();
+    localtime_s(&timeinfo, &secsSinceEpoch);
+    std::strftime(buffer, bufferlen, "%C%y/%m/%d %H:%M:%S", &timeinfo);
+    oss << buffer << ": Processed request #" << request->traceid() << " for user ID " << request->userid();
+
+    std::lock_guard<std::mutex> lock(m_updateMutex);
+    m_userIdToInfoMap[request->userid()] = std::make_shared<UserData>(request);
+    std::cout << oss.str() << std::endl;
+
     return Status::OK;
   }
 };
