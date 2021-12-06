@@ -1,0 +1,12 @@
+###
+PUT http://localhost:8080/userinfo
+Content-Type: application/json
+
+{
+  "userId": "7",
+  "firstName": "John",
+  "lastName": "Doe",
+  "dob": "01/30/1950",
+  "email": "john.doe@gmail.com",
+  "phoneNumber": "555-555-5555"
+}
