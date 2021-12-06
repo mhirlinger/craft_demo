@@ -36,9 +36,9 @@ public class UserInfoController {
 
         try {
             userInfoService.updateUserInfo(userInfoRequest);
-            System.out.println("Successfully updated ID " + counter);
+            System.out.println("Successfully updated request #" + counter);
         } catch (StatusRuntimeException e) {
-            System.out.println("Error " + e.getStatus() + ": Update failed for ID " + counter);
+            System.out.println("Error " + e.getStatus() + ": Update failed for request #" + counter);
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
 
