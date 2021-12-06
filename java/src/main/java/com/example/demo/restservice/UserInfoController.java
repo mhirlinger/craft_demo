@@ -6,26 +6,22 @@ import java.util.concurrent.atomic.AtomicLong;
 import io.grpc.StatusRuntimeException;
 import io.grpc.example.demo.UserInfoGrpc;
 import io.grpc.example.demo.UserInfoRequest;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import io.grpc.ManagedChannel;
-import io.grpc.ManagedChannelBuilder;
-
 
 @RestController
 public class UserInfoController {
 
     private final AtomicLong counter = new AtomicLong();
-    private final String grpcServerTarget = "localhost:50051";
     private final UserInfoGrpc.UserInfoBlockingStub userInfoService;
 
-    UserInfoController() {
-        ManagedChannel channel = ManagedChannelBuilder.forTarget(grpcServerTarget).usePlaintext().build();
-        userInfoService = UserInfoGrpc.newBlockingStub(channel);
+    UserInfoController(UserInfoGrpc.UserInfoBlockingStub userInfoService) {
+        this.userInfoService = userInfoService;
     }
 
     @PutMapping("/userinfo")
-    public UserInfo updateUserInfo(@RequestBody UserInfo userInfo) {
+    public ResponseEntity<Void> updateUserInfo(@RequestBody UserInfo userInfo) {
 
         UserInfoRequest userInfoRequest = UserInfoRequest.newBuilder().
                 setTraceId(counter.incrementAndGet()).
@@ -42,9 +38,10 @@ public class UserInfoController {
             userInfoService.updateUserInfo(userInfoRequest);
             System.out.println("Successfully updated ID " + counter);
         } catch (StatusRuntimeException e) {
-            System.out.println("Error: Update failed for ID " + counter);
+            System.out.println("Error " + e.getStatus() + ": Update failed for ID " + counter);
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
 
-        return userInfo;
+        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
 }

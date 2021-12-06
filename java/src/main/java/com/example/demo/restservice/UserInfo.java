@@ -18,7 +18,7 @@ public class UserInfo {
         this.phoneNumber = phoneNumber;
     }
 
-    public long getUserId() {
+    public Long getUserId() {
         return userId;
     }
 
